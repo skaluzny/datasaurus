@@ -1,0 +1,78 @@
+---
+title: "Datasaurus or Why Visualizations Are Important"
+author: "Stephen Kaluzny"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("dplyr")
+library("ggplot2")
+```
+This note uses a group of datasets that were recently released
+to show the importance of visualizations when doing a data analysis.
+It illustrates how relying on significant bivariate correlations can lead one astray.
+
+The datasets are a larger and more modern version of what is know
+as Anscombe's Quartet.
+Anscombe's quartet consisted of 4 bivariate datasets with the same mean,
+standard deviation and correlation
+but with distinctly different scatterplots.
+
+## The Data
+
+The data is now available as an R package, `datasauRus`, on CRAN.
+
+```{r package, message=FALSE}
+if(!suppressWarnings(require("datasauRus", quietly=TRUE, character.only=TRUE))) {
+  install.packages("datasauRus")
+  library("datasauRus")
+}
+```
+There are 13 datasets consisting of x, y, variable pairs.
+
+We will use the combined (stacked), 3 column version of the datasets
+(called `datasaurus_dozen`)
+here to easily compute statistics
+and plots for all the datasets at once using the `tidyverse`.
+
+The columns have roughly the same univariate statistics:
+```{r univariate}
+datasaurus_dozen %>%
+  group_by(dataset) %>%
+  summarise(MeanX=mean(x), SdX=sd(x), MeanY=mean(y), SdY=sd(y))
+```
+
+The (pearson) correlations between the pairs are also roughly the same (-.06)
+and none of the correlations are considered significant
+when tested with `cor.test`
+```{r correlation}
+datasaurus_dozen %>%
+  group_by(dataset) %>%
+  summarise(Corr=cor(x, y), Pvalue=cor.test(x, y)$p.value)
+```
+
+## Visualization
+
+The surprising result are the scatterplots for each dataset.
+Clearly, there is some strong structure in each dataset
+yet the bivariate correlations gave no indication of this.
+
+```{r plot}
+datasaurus_dozen %>%
+  ggplot(aes(x=x, y=y, color=dataset)) +
+    geom_point(size=0.5) +
+    facet_wrap(~ dataset) +
+    guides(color=FALSE)
+```
+
+## Appendix
+The the `datasauRus` package was originally posted to Github.
+To install that version in R:
+```{r datasaurus_package, eval=FALSE}
+devtools::install_github("stephlocke/datasauRus")
+```
+
+The package contains information and references to how the datasets
+were created.
